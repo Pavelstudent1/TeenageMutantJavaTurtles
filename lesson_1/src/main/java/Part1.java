@@ -86,9 +86,6 @@ public class Part1 {
 
         Integer[] array2 = {10, 7, 5, 4, 2, 1, 9};
         Arrays.sort(array2, (first, second) -> first - second);
-        /*
-        How many of you know that Arrays.toString() properly prints out an array? :)
-         */
         System.out.println(Arrays.toString(array2));
 
 
@@ -102,9 +99,6 @@ public class Part1 {
          */
         Integer[] array3 = {10, 7, 5, 4, 2, 1, 9};
         Arrays.sort(array3, Integer::compare);
-        /*
-        How many of you know that Arrays.toString() properly prints out an array? :)
-         */
         System.out.println(Arrays.toString(array3));
 
 
