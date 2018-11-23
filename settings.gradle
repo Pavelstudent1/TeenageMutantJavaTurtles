@@ -1,3 +1,4 @@
 rootProject.name = 'TeenageMutantJavaTurtles'
 include ':lesson_1'
+include ':lesson_2'
 
