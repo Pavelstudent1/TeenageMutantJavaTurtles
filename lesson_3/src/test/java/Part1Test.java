@@ -5,11 +5,9 @@ import org.junit.Test;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.*;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toSet;
 import static model.Gender.MALE;
 
 public class Part1Test {
@@ -169,7 +167,7 @@ public class Part1Test {
 
         System.out.println(list);
 
-        List<String> fNames = new ArrayList();
+        List<String> fNames = new ArrayList<>();
         for (Flat flat : h.getFlats()) {
             for (Tenant tenant : flat.getTenants()) {
                 fNames.add(tenant.getFirstName());
@@ -210,21 +208,21 @@ public class Part1Test {
     }
 
     @Test
-    public void peelStream() {
-        /*List<Integer> list = Stream.of("a", "b", "c", "d", "e")
+    public void peekStream() {
+        List<Integer> list = Stream.of("a", "b", "c", "d", "e")
                 .peek(System.out::println)
                 .map(s -> s + s)
                 .peek(System.out::println)
                 .map(String::length)
                 .peek(System.out::println)
-                .collect(toList());*/
+                .collect(toList());
 
-        List<Integer> list2 = Stream.of("privet", "kak", "dela")
+        /*List<Integer> list2 = Stream.of("privet", "kak", "dela")
                 .sequential()
                 .peek(System.out::println)
                 .map(String::length)
                 .peek(System.out::println)
-                .collect(toList());
+                .collect(toList());*/
     }
 
     @Test
@@ -284,25 +282,41 @@ public class Part1Test {
 
     @Test
     public void collectStream() {
-        Collection<Integer> c = Arrays.asList(1,2,3,4,5,6);
+        Collection<Integer> c = Arrays.asList(1,1,2,2,3,4,5,6);
+        Collection<Integer> c2 = Arrays.asList(7,8,9,10);
 
-        List<Integer> list = Stream.of(c)
+        List<Integer> list = Stream.of(c, c2)
                 .flatMap(Collection::stream)
-                .collect(toList());
+                .collect(() -> new ArrayList<>(),
+                        (arrList, i) -> arrList.add(i),
+                        (integers, integers2) -> integers.addAll(integers2)); // in parallel stream
 
         System.out.println(list);
 
-        Set<Integer> set = Stream.of(c)
+        Set<Integer> set = Stream.of(c, c2)
                 .flatMap(Collection::stream)
-                .collect(toSet());
+                .collect(HashSet::new, HashSet::add, HashSet::addAll); // addAll in paralel stream
 
         System.out.println(set);
 
-        LinkedHashSet<Integer> hashSet = Stream.of(c)
-                .flatMap(Collection::stream)
-                .collect(Collectors.toCollection(LinkedHashSet::new));
+        Map<Integer, Integer> m1 = new HashMap<>();
+        Map<Integer, Integer> m2 = new HashMap<>();
 
-        System.out.println(hashSet);
+        m1.put(1, 10);
+        m2.put(1, 20);
+
+        m2.forEach((key, value) -> m1.merge(key, value, (integer, integer2) -> integer + integer2));
+
+        System.out.println(m1);
+
+        Map<Integer, Integer> map = Stream.of(c, c2)
+                //.parallel()
+                .flatMap(Collection::stream)
+                .collect(HashMap::new,
+                        (hMap, i) -> hMap.merge(i, 1, (val1, val2) -> val1 + val2),
+                        HashMap::putAll); //parallel remark
+
+        System.out.println(map);
     }
 
     @Test
