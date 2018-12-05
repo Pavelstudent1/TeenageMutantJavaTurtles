@@ -267,6 +267,16 @@ public class Part1Test {
         System.out.println(tenants2);
     }
 
+    @Test
+    public void parallelCollect() {
+        HashSet<Object> set = Stream.of(1, 2, 3, 4, 5, 6, 7, 8, 9)
+                .parallel()
+                .collect(HashSet::new, HashSet::add, Collection::addAll);
+                //.collect(HashSet::new, HashSet::add, (objects, objects2) -> {});
+
+        System.out.println(set);
+    }
+
     //The unordered() operation doesn't do any actions to explicitly unorder the stream.
     // What it does is that it removes the constraint on the stream that it must remain ordered,
     // thereby allowing subsequent operations to use optimizations that don't have to take ordering into consideration.
