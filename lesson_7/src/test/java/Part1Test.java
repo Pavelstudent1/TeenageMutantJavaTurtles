@@ -1,3 +1,4 @@
+import javafx.util.Pair;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -51,22 +52,15 @@ public class Part1Test {
         String date = ldt
                 .format(DateTimeFormatter.ofPattern("MM-dd-yyyy"));
 
-        Document document = Jsoup.connect("http://www.calend.ru/day/" + date).get();
+        Document document = Jsoup.connect("https://www.calend.ru/day/" + date).get();
 
-        Elements elements = document.body().getElementsByClass("famous-date plusyear");
+        Elements elements = document.body().getElementsByClass("block knownDates");
         Element root = elements.get(0);
 
-        Elements when = root.getElementsByTag("h2");
-        Element elementWhen = when.get(0);
-        String text = elementWhen.text();
-        String d = text.substring(0, text.length() - 9);
-        //System.out.println(elementWhen.text());
-
-        Elements history = root.getElementsByTag("div");
-        history.remove(0);
+        Elements history = root.getElementsByClass("caption");
         List<HistoryInfo> historyList = history.stream()
                 .map(e -> new HistoryInfoDTO(
-                        d,
+                        date,
                         e.child(0).text(),
                         e.child(1).text()))
                 .sorted(Comparator.comparingInt(v -> Integer.valueOf(v.year)))
@@ -80,36 +74,30 @@ public class Part1Test {
 
     @Test
     public void pacOfHI() {
-        final String URL = "http://www.calend.ru/day/";
+        final String URL = "https://www.calend.ru/day/";
 
-        List<HistoryInfoDTO> dtos = Stream.iterate(1, i -> ++i)
+        List<HistoryInfo> dtos = Stream.iterate(1, i -> ++i)
                 .limit(90)
-                .parallel() //37s915
                 .map(i -> LocalDate.now().plusDays(i))
                 .map(ld -> ld.format(DateTimeFormatter.ofPattern("MM-dd-yyyy")))
                 .map(path -> {
                     try {
-                        return Jsoup.connect(URL + path).get();
+                        return new Pair<String, Document>(path, Jsoup.connect(URL + path).get());
                     } catch (IOException ignore) {
                     }
                     throw new IllegalArgumentException();
                 })
-                .map(d -> d.body().getElementsByClass("famous-date plusyear"))
-                .map(e -> e.get(0))
-                .flatMap(root -> {
-                    String date = root
-                            .getElementsByTag("h2")
-                            .get(0)
-                            .text();
-
-                    String d = date.substring(0, date.length() - 9);
-
-                    Elements h = root.getElementsByTag("div");
-                    h.remove(0);
-
-                    return h.stream()
-                            .map(e -> new HistoryInfoDTO(d, e.child(0).text(), e.child(1).text()));
-                })
+                .map(pairD -> new Pair<String, Elements>
+                        (pairD.getKey(),pairD.getValue().body().getElementsByClass("block knownDates")))
+                .map(pairE -> new Pair<String, Element>(pairE.getKey() ,pairE.getValue().get(0)))
+                .flatMap(pairRoot ->
+                    pairRoot.getValue().getElementsByClass("caption").stream()
+                            .map(element -> new HistoryInfoDTO(
+                                    pairRoot.getKey(),
+                                    element.child(0).text(),
+                                    element.child(1).text()))
+                )
+                .map(h -> new HistoryInfo(LocalDate.of(Integer.parseInt(h.year), h.getMonth(), h.getDay()), h.getInfo()))
                 .collect(Collectors.toList());
 
         dtos.forEach(System.out::println);
@@ -117,14 +105,14 @@ public class Part1Test {
 
     class HistoryInfoDTO {
 
-        private final String dayAndMonth;
+        private final String monthAndDay;
 
         private final String year;
 
         private final String info;
 
-        public HistoryInfoDTO(String dayAndMonth, String year, String info) {
-            this.dayAndMonth = dayAndMonth;
+        public HistoryInfoDTO(String monthAndDay, String year, String info) {
+            this.monthAndDay = monthAndDay;
             this.year = year;
             this.info = info;
         }
@@ -134,11 +122,19 @@ public class Part1Test {
         }
 
         public String getData() {
-            return year + " " + dayAndMonth;
+            return year + " " + monthAndDay;
         }
 
         public String getInfo() {
             return info;
+        }
+
+        public int getMonth(){
+            return Integer.parseInt(monthAndDay.substring(0,2));
+        }
+
+        public int getDay(){
+            return Integer.parseInt(monthAndDay.substring(3,5));
         }
 
         @Override
@@ -173,33 +169,25 @@ public class Part1Test {
         }
     }
 
-    private static List<HistoryInfo> giveHistory() throws IOException {
+    private List<HistoryInfo> giveHistory() throws IOException {
         LocalDateTime ldt = LocalDateTime.now();
 
-        String date = ldt
+        final String datee = ldt
                 .format(DateTimeFormatter.ofPattern("MM-dd-yyyy"));
 
-        Document document = Jsoup.connect("http://www.calend.ru/day/" + date).get();
+        Document document = Jsoup.connect("https://www.calend.ru/day/" + datee).get();
 
-        Elements elements = document.body().getElementsByClass("famous-date plusyear");
+        Elements elements = document.body().getElementsByClass("block knownDates");
         Element root = elements.get(0);
 
-        Elements when = root.getElementsByTag("h2");
-        Element elementWhen = when.get(0);
-        String text = elementWhen.text();
-        String d = text.substring(0, text.length() - 9);
-        //System.out.println(elementWhen.text());
-
-        Elements history = root.getElementsByTag("div");
-        history.remove(0);
-
+        Elements history = root.getElementsByClass("caption");
         return history.stream()
-                .map(e -> new Part1Test().new HistoryInfoDTO(
-                        d,
+                .map(e -> new HistoryInfoDTO(
+                        datee,
                         e.child(0).text(),
                         e.child(1).text()))
-                //.sorted(Comparator.comparingInt(v -> Integer.valueOf(v.year)))
-                .map(h -> new Part1Test().new HistoryInfo(
+                .sorted(Comparator.comparingInt(v -> Integer.valueOf(v.year)))
+                .map(h -> new HistoryInfo(
                         LocalDate.of(Integer.parseInt(h.year), ldt.getMonth(), ldt.getDayOfMonth()),
                         h.info))
                 .collect(Collectors.toList());
